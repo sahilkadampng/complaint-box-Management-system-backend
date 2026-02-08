@@ -6,10 +6,10 @@
             "use": "@vercel/node"
         }
     ],
-    "routes": [
+    "rewrites": [
         {
-            "src": "/(.*)",
-            "dest": "server/api/index.ts"
+            "source": "/(.*)",
+            "destination": "/server/api/index.ts"
         }
     ]
 }
