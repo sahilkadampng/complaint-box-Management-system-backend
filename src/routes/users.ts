@@ -19,7 +19,11 @@ router.get(
             const pageNum = parseInt(page as string, 10);
             const limitNum = parseInt(limit as string, 10);
 
-            const { users, total } = await (await import('../services/userService.js')).listUsers((role as any) || undefined, pageNum, limitNum);
+            const { users, total } = await (await import('../services/userService.js')).listUsers(
+                (role as any) || undefined,
+                pageNum,
+                limitNum
+            );
 
             res.json({
                 users,
@@ -41,7 +45,7 @@ router.get(
 // @access  Private
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { user } = await (await import('../services/userService.js')).findUserById(req.params.id);
+    const { user } = await (await import('../services/userService.js')).findUserById(req.params.id);
 
         if (!user) {
             res.status(404).json({ error: 'User not found' });
@@ -92,7 +96,10 @@ router.put(
                 return;
             }
 
-            const updated = await (await import('../services/userService.js')).updateUserById(req.params.id, updateData);
+            const updated = await (await import('../services/userService.js')).updateUserById(
+                req.params.id,
+                updateData
+            );
 
             if (!updated) {
                 res.status(404).json({ error: 'User not found' });
@@ -112,7 +119,7 @@ router.put(
 router.delete('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const targetId = req.params.id;
-        const { user: userToDelete, collection } = await (await import('../services/userService.js')).findUserById(targetId);
+    const { user: userToDelete, collection } = await (await import('../services/userService.js')).findUserById(targetId);
         if (!userToDelete) {
             res.status(404).json({ error: 'User not found' });
             return;
@@ -124,17 +131,17 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response): Pro
             return;
         }
 
-        // If student, remove complaints created by this user
-        if (collection === 'student') {
-            await Complaint.deleteMany({ studentId: userToDelete._id });
-            await (await import('../services/userService.js')).deleteUserById(targetId);
-            res.json({ message: 'User and related complaints deleted successfully' });
-            return;
-        }
-
-        // Faculty deletion
+    // If student, remove complaints created by this user
+    if (collection === 'student') {
+        await Complaint.deleteMany({ studentId: userToDelete._id });
         await (await import('../services/userService.js')).deleteUserById(targetId);
-        res.json({ message: 'Faculty deleted successfully' });
+        res.json({ message: 'User and related complaints deleted successfully' });
+        return;
+    }
+
+    // Faculty deletion
+    await (await import('../services/userService.js')).deleteUserById(targetId);
+    res.json({ message: 'Faculty deleted successfully' });
     } catch (error: any) {
         res.status(500).json({ error: error.message || 'Server error' });
     }

@@ -8,7 +8,10 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
         if (!userId) {
             return res.status(401).json({ error: "Unauthorized" });
         }
-        const { user } = await (await import('../services/userService.js')).findUserById(userId.toString(), { withPassword: true });
+        const { user } = await (await import('../services/userService.js')).findUserById(
+            userId.toString(),
+            { withPassword: true }
+        );
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }

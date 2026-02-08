@@ -6,9 +6,9 @@ export const connectDB = async (): Promise<void> => {
 
         await mongoose.connect(mongoURI);
 
-        console.log('MongoDB connected successfully');
+        console.log('✅ MongoDB connected successfully');
     } catch (error: any) {
-        console.error('MongoDB connection error:', error.message || error);
+        console.error('❌ MongoDB connection error:', error.message || error);
         console.error('Full error:', error);
         // Don't exit in development - let the server start and show errors
         if (process.env.NODE_ENV === 'production') {

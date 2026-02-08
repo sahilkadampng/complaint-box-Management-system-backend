@@ -5,6 +5,7 @@ uploads/
 *.log
 .DS_Store
 
+<<<<<<< HEAD
 # Logs
 logs
 *.log
@@ -29,3 +30,5 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+=======
+>>>>>>> 278bd4034f268f27e59dff1df548a2b76fa27d99

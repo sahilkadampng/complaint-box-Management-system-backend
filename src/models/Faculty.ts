@@ -93,11 +93,10 @@ const FacultySchema = new Schema<IFaculty>(
 
 // Hash password before saving
 FacultySchema.pre("save", async function (next) {
-    const doc = this as any;
-    if (!doc.isModified("password")) return next();
+    if (!this.isModified("password")) return next();
 
     const salt = await bcrypt.genSalt(10);
-    doc.password = await bcrypt.hash(doc.password, salt);
+    this.password = await bcrypt.hash(this.password, salt);
     next();
 });
 
@@ -105,8 +104,7 @@ FacultySchema.pre("save", async function (next) {
 FacultySchema.methods.comparePassword = async function (
     candidatePassword: string
 ): Promise<boolean> {
-    const doc = this as any;
-    return bcrypt.compare(candidatePassword, doc.password);
+    return bcrypt.compare(candidatePassword, this.password);
 };
 
 export default mongoose.model<IFaculty>("Faculty", FacultySchema);

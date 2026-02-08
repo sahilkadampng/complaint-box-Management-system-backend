@@ -24,7 +24,7 @@ app.use(cors({
     credentials: true,
 }));
 
-app.options('*', cors()); //IMPORTANT preflight fix
+app.options('*', cors()); // IMPORTANT preflight fix
 
 // Increase payload limits to allow file uploads sent as base64 (frontend enforces file size too)
 // Set slightly above frontend limit (10MB) to allow encoding overhead

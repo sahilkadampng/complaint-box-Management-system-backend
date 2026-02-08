@@ -37,9 +37,10 @@ export const authenticate = async (
             user = await Student.findById(decoded.userId).select('-password');
         } else {
             // Fallback: try all collections
-            user = await Student.findById(decoded.userId).select('-password') || 
-                   await Faculty.findById(decoded.userId).select('-password') ||
-                   await Admin.findById(decoded.userId).select('-password');
+            user =
+                (await Student.findById(decoded.userId).select('-password')) ||
+                (await Faculty.findById(decoded.userId).select('-password')) ||
+                (await Admin.findById(decoded.userId).select('-password'));
         }
 
         if (!user) {

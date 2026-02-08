@@ -13,7 +13,7 @@ router.get(
     '/',
     authenticate,
     [
-        query('status').optional().isIn(['submitted', 'in_review', 'need_clarification', 'assigned', 'resolved', 'escalated']),
+    query('status').optional().isIn(['submitted', 'in_review', 'need_clarification', 'assigned', 'resolved', 'escalated']),
         query('category').optional().trim(),
         query('page').optional().isInt({ min: 1 }),
         query('limit').optional().isInt({ min: 1, max: 100 }),
@@ -36,6 +36,8 @@ router.get(
             if (category && category !== 'all') query.category = category;
 
             const complaints = await Complaint.find(query)
+                .populate('studentId', 'name username email')
+                .populate('assignedTo', 'name username')
                 .sort({ createdAt: -1 })
                 .skip(skip)
                 .limit(limitNum);
@@ -63,11 +65,15 @@ router.get(
 router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         // Try by MongoDB _id first
-        let complaint = await Complaint.findById(req.params.id);
+        let complaint = await Complaint.findById(req.params.id)
+            .populate('studentId', 'name username email')
+            .populate('assignedTo', 'name username');
 
         // Fallback: try by short complaintId (human-friendly id)
         if (!complaint) {
-            complaint = await Complaint.findOne({ complaintId: req.params.id });
+            complaint = await Complaint.findOne({ complaintId: req.params.id })
+                .populate('studentId', 'name username email')
+                .populate('assignedTo', 'name username');
         }
 
         if (!complaint) {
@@ -136,7 +142,9 @@ router.post(
             });
 
             await complaint.save();
-            const populatedComplaint = await Complaint.findById(complaint._id);
+            const populatedComplaint = await Complaint.findById(complaint._id)
+                .populate('studentId', 'name username email')
+                .populate('assignedTo', 'name username');
 
             // Notify faculty in the same department who have email alerts enabled
             (async () => {
@@ -146,26 +154,29 @@ router.post(
                         // No department: skip notification
                         return;
                     }
-                    // Lazy-import User and mailer to avoid circular deps and keep handler lightweight
-                    const User = (await import('../models/User.js')).default;
+                    // Lazy-import mailer/models to avoid circular deps and keep handler lightweight
                     const { sendEmail } = await import('../utils/mailer.js');
                     const Faculty = (await import('../models/Faculty.js')).default;
+
                     const facultyMembers = await Faculty.find({ department, emailAlerts: true }).select('email name username');
                     const emails = facultyMembers.map((f: any) => f.email).filter(Boolean);
                     if (emails.length === 0) return;
+
                     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
                     const link = `${frontendUrl}/complaints/${populatedComplaint?._id || complaint._id}`;
+                    const studentLabel = populatedComplaint?.studentName
+                        ? `${populatedComplaint.studentName} (${populatedComplaint.studentUsername})`
+                        : 'N/A';
+
                     const html = `
                         <div style="font-family:'Segoe UI',Arial,sans-serif;background:#f1f5f9;padding:32px;color:#0f172a;">
                             <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;box-shadow:0 12px 32px rgba(15,23,42,0.12);overflow:hidden;border:1px solid #e5e7eb;">
-                            <!-- Header -->
                             <div style="background:#4D2B8C;padding:24px 28px;color:#ffffff;">
                                 <h2 style="margin:0;font-size:20px;font-weight:600;">New Complaint Assigned</h2>
                                 <p style="margin:6px 0 0;font-size:14px;opacity:0.9;">
                                 Action required for the ${department} department
                                 </p>
                             </div>
-                            <!-- Body -->
                             <div style="padding:26px 28px;">
                               <img style="display:block; margin:0 auto;" src="https://i.pinimg.com/1200x/a3/e9/f0/a3e9f0b5a9cd70836899647e9bce1923.jpg" height="200px" width="260px">
                                 <p style="margin:0 0 10px;font-size:15px;">Hello Team,</p>
@@ -174,7 +185,6 @@ router.post(
                                 <strong style="color:#0f172a;">${department}</strong> department.  
                                 Please review the information below and take necessary action.
                                 </p>
-                                <!-- Complaint Card -->
                                 <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px 18px;margin-bottom:20px;">
                                 <div style="font-size:12px;text-transform:uppercase;letter-spacing:0.08em;color:#64748b;margin-bottom:4px;">
                                     Complaint Title
@@ -187,21 +197,19 @@ router.post(
                                     ${populatedComplaint?.category || 'Uncategorized'}
                                     </span>
                                     <span style="padding:6px 12px;background:#ecfeff;color:#155e75;border-radius:999px;font-size:12px;font-weight:500;">
-                                    Student: N/A
+                                    Student: ${studentLabel}
                                     </span>
                                 </div>
                                 </div>
-                                <!-- CTA -->
                                 <div style="text-align:center;margin:24px 0;">
                                 <a href="${link}" 
                                     style="display:inline-block;background:#85409D;color:#ffffff;
                                     text-decoration:none;padding:14px 26px;border-radius:12px;
                                     font-size:14px;font-weight:600;">
-                                    View Complaint Details →
+                                    View Complaint Details ->
                                 </a>
                                 </div>
                                 <hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">
-                                <!-- Footer -->
                                 <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;text-align:center;">
                                 You are receiving this email because you are subscribed to department complaint notifications.  
                                 Please do not reply to this automated message.
@@ -268,7 +276,9 @@ router.put(
 
             await complaint.save();
 
-            const populatedComplaint = await Complaint.findById(complaint._id);
+            const populatedComplaint = await Complaint.findById(complaint._id)
+                .populate('studentId', 'name username email')
+                .populate('assignedTo', 'name username');
 
             res.json({ complaint: populatedComplaint });
         } catch (error: any) {
@@ -337,7 +347,9 @@ router.patch(
 
             await complaint.save();
 
-            const populatedComplaint = await Complaint.findById(complaint._id);
+            const populatedComplaint = await Complaint.findById(complaint._id)
+                .populate('studentId', 'name username email')
+                .populate('assignedTo', 'name username');
 
             res.json({ complaint: populatedComplaint });
         } catch (error: any) {
@@ -401,11 +413,10 @@ router.patch('/:id/read', authenticate, async (req: AuthRequest, res: Response):
 
         res.json({
             message: 'Complaint marked as read',
-            complaint
+            complaint,
         });
     } catch (error: any) {
         res.status(500).json({ error: error.message || 'Server error' });
     }
 });
-
 export default router;
