@@ -1,28 +1,36 @@
 import mongoose from 'mongoose';
 
+let isConnected = false;
+
 export const connectDB = async (): Promise<void> => {
+    if (isConnected) {
+        return;
+    }
+
     try {
-        const mongoURI = process.env.MONGODB_URI || 'mongodb://localhost:27017/complaint-box';
+        const mongoURI =
+            process.env.MONGODB_URI || 'mongodb://localhost:27017/complaint-box';
 
         await mongoose.connect(mongoURI);
 
+        isConnected = true;
         console.log('✅ MongoDB connected successfully');
     } catch (error: any) {
         console.error('❌ MongoDB connection error:', error.message || error);
-        console.error('Full error:', error);
-        // Don't exit in development - let the server start and show errors
-        if (process.env.NODE_ENV === 'production') {
+
+        // ❌ Never process.exit on Vercel
+        if (!process.env.VERCEL) {
             process.exit(1);
         }
     }
 };
 
-// Handle connection events
+// Optional but safe
 mongoose.connection.on('disconnected', () => {
-    console.log('⚠️  MongoDB disconnected');
+    isConnected = false;
+    console.log('⚠️ MongoDB disconnected');
 });
 
 mongoose.connection.on('error', (err) => {
     console.error('❌ MongoDB error:', err);
 });
-

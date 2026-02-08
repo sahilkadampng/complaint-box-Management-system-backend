@@ -10,7 +10,9 @@ import complaintRoutes from './routes/complaints.js';
 import userRoutes from './routes/users.js';
 
 // Load environment variables
-dotenv.config();
+if (!process.env.VERCEL) {
+    dotenv.config();
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -50,6 +52,11 @@ app.get('/api', (req, res) => {
         endpoints: ['/api/health', '/api/auth', '/api/complaints', '/api/users'],
     });
 });
+
+app.get('/', (req, res) => {
+    res.json({ status: 'Backend Live 🚀' });
+});
+
 
 // Error handling
 app.use(notFound);
