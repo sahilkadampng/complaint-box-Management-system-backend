@@ -13,7 +13,7 @@ router.get(
     '/',
     authenticate,
     [
-    query('status').optional().isIn(['submitted', 'in_review', 'need_clarification', 'assigned', 'resolved', 'escalated']),
+        query('status').optional().isIn(['submitted', 'in_review', 'need_clarification', 'assigned', 'resolved', 'escalated']),
         query('category').optional().trim(),
         query('page').optional().isInt({ min: 1 }),
         query('limit').optional().isInt({ min: 1, max: 100 }),
@@ -178,8 +178,8 @@ router.post(
                                 </p>
                             </div>
                             <div style="padding:26px 28px;">
-                              <img style="display:block; margin:0 auto;" src="https://i.pinimg.com/1200x/a3/e9/f0/a3e9f0b5a9cd70836899647e9bce1923.jpg" height="200px" width="260px">
-                                <p style="margin:0 0 10px;font-size:15px;">Hello Team,</p>
+                                <img style="display:block; margin:0 auto;" src="https://i.pinimg.com/1200x/a3/e9/f0/a3e9f0b5a9cd70836899647e9bce1923.jpg" height="200px" width="260px">
+                                <p style="margin:0 0 10px;margin-top:20px;font-size:15px;">Hello Team,</p>
                                 <p style="margin:0 0 18px;font-size:14px;color:#334155;line-height:1.6;">
                                 A new complaint has been submitted under the 
                                 <strong style="color:#0f172a;">${department}</strong> department.  
@@ -197,7 +197,7 @@ router.post(
                                     ${populatedComplaint?.category || 'Uncategorized'}
                                     </span>
                                     <span style="padding:6px 12px;background:#ecfeff;color:#155e75;border-radius:999px;font-size:12px;font-weight:500;">
-                                    Student: ${studentLabel}
+                                    Student: ${`N/A`}
                                     </span>
                                 </div>
                                 </div>
