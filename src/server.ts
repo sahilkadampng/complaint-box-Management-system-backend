@@ -23,9 +23,24 @@ const PORT = process.env.PORT || 3000;
 // Connect to MongoDB
 connectDB();
 
-// Middleware
+// Middleware - Allow requests from same origin (for Swagger) and configured origins
+const allowedOrigins = process.env.CORS_ORIGIN 
+    ? process.env.CORS_ORIGIN.split(',') 
+    : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like Swagger UI on same domain)
+        if (!origin) return callback(null, true);
+        
+        // Allow configured origins
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        
+        // Allow same-origin requests (Railway/Vercel deployment with Swagger)
+        callback(null, true);
+    },
     credentials: true,
 }));
 

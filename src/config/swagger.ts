@@ -15,11 +15,7 @@ const options = {
         servers: [
             {
                 url: process.env.API_URL || 'http://localhost:3000',
-                description: 'Development server',
-            },
-            {
-                url: 'https://your-production-url.vercel.app',
-                description: 'Production server',
+                description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
             },
         ],
         components: {
