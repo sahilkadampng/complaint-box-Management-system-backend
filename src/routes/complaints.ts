@@ -178,7 +178,7 @@ router.post(
                                 </p>
                             </div>
                             <div style="padding:26px 28px;">
-                                <img style="display:block; margin:0 auto;" src="https://i.pinimg.com/1200x/a3/e9/f0/a3e9f0b5a9cd70836899647e9bce1923.jpg" height="200px" width="260px">
+                                <img style="display:block; margin:0 auto;" src="" height="200px" width="260px">
                                 <p style="margin:0 0 10px;margin-top:20px;font-size:15px;">Hello Team,</p>
                                 <p style="margin:0 0 18px;font-size:14px;color:#334155;line-height:1.6;">
                                 A new complaint has been submitted under the 
