@@ -10,7 +10,10 @@
         "start": "node dist/server.js",
         "type-check": "tsc --noEmit",
         "create-admin": "tsx src/scripts/createAdmin.ts",
-        "fix-indexes": "tsx src/scripts/fixIndexes.ts"
+        "fix-indexes": "tsx src/scripts/fixIndexes.ts",
+        "test-jwt": "tsx src/scripts/testJwtGenerator.ts",
+        "reset-password": "tsx src/scripts/resetPassword.ts",
+        "list-users": "tsx src/scripts/listUsers.ts"
     },
     "dependencies": {
         "bcryptjs": "^2.4.3",
@@ -22,7 +25,9 @@
         "jspdf": "^4.0.0",
         "mongoose": "^8.20.1",
         "multer": "^1.4.5-lts.1",
-        "nodemailer": "^6.10.1"
+        "nodemailer": "^6.10.1",
+        "swagger-jsdoc": "^6.2.8",
+        "swagger-ui-express": "^5.0.1"
     },
     "devDependencies": {
         "@types/bcryptjs": "^2.4.6",
@@ -32,6 +37,8 @@
         "@types/multer": "^1.4.11",
         "@types/node": "^20.10.5",
         "@types/nodemailer": "^7.0.4",
+        "@types/swagger-jsdoc": "^6.0.4",
+        "@types/swagger-ui-express": "^4.1.8",
         "tsx": "^4.7.0",
         "typescript": "^5.3.3"
     }

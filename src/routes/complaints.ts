@@ -6,6 +6,77 @@ import { generateComplaintId } from '../idgenerater.js';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Complaints
+ *     description: Complaint management endpoints
+ */
+
+/**
+ * @swagger
+ * /api/complaints:
+ *   get:
+ *     summary: Get all complaints
+ *     description: Retrieve complaints filtered by role (students see only their complaints, faculty/admin see all)
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [submitted, in_review, need_clarification, assigned, resolved, escalated, all]
+ *         description: Filter by complaint status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by complaint category
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 10
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Complaints retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaints:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Complaint'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/complaints
 // @desc    Get all complaints (filtered by role)
 // @access  Private
@@ -59,6 +130,41 @@ router.get(
     }
 );
 
+/**
+ * @swagger
+ * /api/complaints/{id}:
+ *   get:
+ *     summary: Get single complaint
+ *     description: Retrieve a specific complaint by ID (students can only view their own)
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Complaint ID (MongoDB _id or complaintId)
+ *     responses:
+ *       200:
+ *         description: Complaint retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Complaint not found
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/complaints/:id
 // @desc    Get single complaint
 // @access  Private
@@ -96,6 +202,65 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
     }
 });
 
+/**
+ * @swagger
+ * /api/complaints:
+ *   post:
+ *     summary: Create new complaint
+ *     description: Submit a new complaint (students only)
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - title
+ *               - description
+ *               - category
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 maxLength: 100
+ *                 example: "Broken equipment in lab"
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *                 example: "The computers in Lab 301 are not working properly"
+ *               category:
+ *                 type: string
+ *                 example: "Infrastructure"
+ *               attachment:
+ *                 type: string
+ *                 description: Base64 encoded file
+ *               department:
+ *                 type: string
+ *                 example: "Computer Science"
+ *               yearOfStudy:
+ *                 type: string
+ *                 example: "2024"
+ *     responses:
+ *       201:
+ *         description: Complaint created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Only students can create complaints
+ *       500:
+ *         description: Server error
+ */
 // @route   POST /api/complaints
 // @desc    Create new complaint
 // @access  Private (Student only)
@@ -232,6 +397,59 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/complaints/{id}:
+ *   put:
+ *     summary: Update complaint
+ *     description: Update complaint details (students can only update their own)
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Complaint ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:
+ *                 type: string
+ *                 maxLength: 100
+ *               description:
+ *                 type: string
+ *                 maxLength: 1000
+ *               category:
+ *                 type: string
+ *               attachment:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Complaint updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Complaint not found
+ *       500:
+ *         description: Server error
+ */
 // @route   PUT /api/complaints/:id
 // @desc    Update complaint
 // @access  Private
@@ -287,6 +505,64 @@ router.put(
     }
 );
 
+/**
+ * @swagger
+ * /api/complaints/{id}/status:
+ *   patch:
+ *     summary: Update complaint status
+ *     description: Update complaint status and add notes (faculty only)
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Complaint ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [submitted, in_review, need_clarification, assigned, resolved, escalated]
+ *               note:
+ *                 type: string
+ *                 description: Optional note about status change
+ *               assignedTo:
+ *                 type: string
+ *                 description: Faculty member ID to assign complaint to
+ *               clarificationMessage:
+ *                 type: string
+ *                 description: Message when requesting clarification
+ *     responses:
+ *       200:
+ *         description: Status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Faculty only
+ *       404:
+ *         description: Complaint not found
+ *       500:
+ *         description: Server error
+ */
 // @route   PATCH /api/complaints/:id/status
 // @desc    Update complaint status (Faculty only)
 // @access  Private (Faculty only)
@@ -358,6 +634,38 @@ router.patch(
     }
 );
 
+/**
+ * @swagger
+ * /api/complaints/{id}:
+ *   delete:
+ *     summary: Delete complaint
+ *     description: Delete a complaint (students can only delete their own)
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Complaint ID
+ *     responses:
+ *       200:
+ *         description: Complaint deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: Complaint not found
+ *       500:
+ *         description: Server error
+ */
 // @route   DELETE /api/complaints/:id
 // @desc    Delete complaint
 // @access  Private
@@ -387,6 +695,41 @@ router.delete('/:id', authenticate, async (req: AuthRequest, res: Response): Pro
     }
 });
 
+/**
+ * @swagger
+ * /api/complaints/{id}/read:
+ *   patch:
+ *     summary: Mark complaint as read
+ *     description: Mark a complaint as read by the current user
+ *     tags: [Complaints]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Complaint ID
+ *     responses:
+ *       200:
+ *         description: Complaint marked as read
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 complaint:
+ *                   $ref: '#/components/schemas/Complaint'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Complaint not found
+ *       500:
+ *         description: Server error
+ */
 // @route   PATCH /api/complaints/:id/read
 // @desc    Mark complaint as read
 // @access  Private

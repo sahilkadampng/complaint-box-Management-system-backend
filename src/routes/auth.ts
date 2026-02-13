@@ -15,6 +15,99 @@ const generateToken = (userId: string, role?: 'student' | 'faculty' | 'admin'): 
     return jwt.sign({ userId, role }, secret, signOptions);
 };
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Auth
+ *     description: Authentication and user management endpoints
+ */
+
+/**
+ * @swagger
+ * /api/auth/signup:
+ *   post:
+ *     summary: Register a new user
+ *     description: Create a new user account (student, faculty, or admin)
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - username
+ *               - email
+ *               - password
+ *               - role
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "John Doe"
+ *               username:
+ *                 type: string
+ *                 minLength: 3
+ *                 example: "johndoe"
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "john.doe@example.com"
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "password123"
+ *               role:
+ *                 type: string
+ *                 enum: [student, faculty, admin]
+ *                 example: "student"
+ *               department:
+ *                 type: string
+ *                 example: "Computer Science"
+ *               section:
+ *                 type: string
+ *                 example: "A"
+ *               yearOfStudy:
+ *                 type: string
+ *                 example: "2024"
+ *               program:
+ *                 type: string
+ *                 example: "B.Tech"
+ *               phoneNumber:
+ *                 type: string
+ *                 example: "+1234567890"
+ *               studentId:
+ *                 type: string
+ *                 example: "STU001"
+ *               rollNumber:
+ *                 type: string
+ *                 example: "CS2024001"
+ *               profilePicture:
+ *                 type: string
+ *                 description: Base64 encoded image or URL
+ *     responses:
+ *       201:
+ *         description: User created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error or user already exists
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Server error
+ */
 // @route   POST /api/auth/signup
 // @desc    Register a new user
 // @access  Public
@@ -107,6 +200,55 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Login user
+ *     description: Authenticate a user and receive a JWT token
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - username
+ *               - password
+ *               - role
+ *             properties:
+ *               username:
+ *                 type: string
+ *                 example: "johndoe"
+ *               password:
+ *                 type: string
+ *                 example: "password123"
+ *               role:
+ *                 type: string
+ *                 enum: [student, faculty, admin]
+ *                 example: "student"
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid credentials
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Server error
+ */
 // @route   POST /api/auth/login
 // @desc    Login user
 // @access  Public
@@ -157,6 +299,30 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: Get current user
+ *     description: Retrieve the currently authenticated user's profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: User profile retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized - Invalid or missing token
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/auth/me
 // @desc    Get current user
 // @access  Private
@@ -168,6 +334,48 @@ router.get('/me', authenticate, async (req: AuthRequest, res: Response): Promise
     }
 });
 
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update user profile
+ *     description: Update the current user's profile information
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *     responses:
+ *       200:
+ *         description: Profile updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // @route   PUT /api/auth/profile
 // @desc    Update user profile
 // @access  Private
@@ -210,6 +418,48 @@ router.put(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Change password
+ *     description: Change the current user's password (requires current password verification)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: "oldPassword123"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "newPassword123"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Current password is incorrect
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // @route   POST /api/auth/change-password
 // @desc    Change password (requires current password)
 // @access  Private
@@ -253,6 +503,41 @@ router.post(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/admin/send-code:
+ *   patch:
+ *     summary: Send verification code to admin email
+ *     description: Send a 6-digit verification code to the admin's email for two-factor authentication
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "admin@example.com"
+ *     responses:
+ *       200:
+ *         description: Verification code sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: Admin account not found
+ *       500:
+ *         description: Failed to send verification code
+ */
 // @route   PATCH /api/auth/admin/send-code
 // @desc    Send verification code to admin email
 // @access  Public
@@ -390,6 +675,43 @@ router.patch(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/admin/verify-code:
+ *   patch:
+ *     summary: Verify admin verification code
+ *     description: Verify the 6-digit code sent to admin's email
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - code
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "admin@example.com"
+ *               code:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: Code verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       400:
+ *         description: Invalid or expired code
+ *       500:
+ *         description: Verification failed
+ */
 // @route   PATCH /api/auth/admin/verify-code
 // @desc    Verify admin code
 // @access  Public
@@ -440,6 +762,51 @@ router.patch(
     }
 );
 
+/**
+ * @swagger
+ * /api/auth/admin/login:
+ *   post:
+ *     summary: Admin login
+ *     description: Admin login with email and password (should be used after code verification)
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: "admin@example.com"
+ *               password:
+ *                 type: string
+ *                 example: "adminPassword123"
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 token:
+ *                   type: string
+ *                   description: JWT authentication token
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Invalid credentials
+ *       400:
+ *         description: Validation error
+ *       500:
+ *         description: Login failed
+ */
 // @route   POST /api/auth/admin/login
 // @desc    Admin login with email and password (after verification)
 // @access  Public

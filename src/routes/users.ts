@@ -5,6 +5,74 @@ import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 
 const router = express.Router();
 
+/**
+ * @swagger
+ * tags:
+ *   - name: Users
+ *     description: User management endpoints
+ */
+
+/**
+ * @swagger
+ * /api/users:
+ *   get:
+ *     summary: Get all users
+ *     description: Retrieve list of users (faculty and admin only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [student, faculty, admin]
+ *         description: Filter users by role
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           maximum: 100
+ *           default: 50
+ *         description: Number of items per page
+ *     responses:
+ *       200:
+ *         description: Users retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 users:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/User'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Faculty and admin only
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/users
 // @desc    Get all users (Faculty and Admin)
 // @access  Private (Faculty and Admin only)
@@ -40,6 +108,41 @@ router.get(
     }
 );
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   get:
+ *     summary: Get single user
+ *     description: Retrieve a specific user's profile (students can only view their own)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // @route   GET /api/users/:id
 // @desc    Get single user
 // @access  Private
@@ -64,6 +167,65 @@ router.get('/:id', authenticate, async (req: AuthRequest, res: Response): Promis
     }
 });
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   put:
+ *     summary: Update user
+ *     description: Update user information (faculty only)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               role:
+ *                 type: string
+ *                 enum: [student, faculty]
+ *               department:
+ *                 type: string
+ *               yearOfStudy:
+ *                 type: string
+ *               emailAlerts:
+ *                 type: boolean
+ *               systemMessages:
+ *                 type: boolean
+ *     responses:
+ *       200:
+ *         description: User updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       400:
+ *         description: Validation error or role change not supported
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Faculty only
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // @route   PUT /api/users/:id
 // @desc    Update user (Faculty only)
 // @access  Private (Faculty only)
@@ -113,6 +275,38 @@ router.put(
     }
 );
 
+/**
+ * @swagger
+ * /api/users/{id}:
+ *   delete:
+ *     summary: Delete user
+ *     description: Delete a user and their complaints (user themselves or faculty)
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Success'
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Access denied
+ *       404:
+ *         description: User not found
+ *       500:
+ *         description: Server error
+ */
 // @route   DELETE /api/users/:id
 // @desc    Delete user and their complaints
 // @access  Private (user themselves or faculty)
