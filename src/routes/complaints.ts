@@ -107,6 +107,7 @@ router.get(
             if (category && category !== 'all') query.category = category;
 
             const complaints = await Complaint.find(query)
+            .select('-attachment -readBy')
                 .populate('studentId', 'name username email')
                 .populate('assignedTo', 'name username')
                 .sort({ createdAt: -1 })

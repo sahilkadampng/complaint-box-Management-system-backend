@@ -1,36 +1,33 @@
 import mongoose from 'mongoose';
 
 let isConnected = false;
+let connectionPromise: Promise<void> | null = null;
 
 export const connectDB = async (): Promise<void> => {
-    if (isConnected) {
-        return;
-    }
+    if (isConnected) return;
+    if (connectionPromise) return connectionPromise;
 
-    try {
-        const mongoURI =
-            process.env.MONGODB_URI || 'mongodb://localhost:27017/complaint-box';
+    connectionPromise = (async () => {
+        try {
+            const mongoURI =
+                process.env.MONGODB_URI || 'mongodb://localhost:27017/complaint-box';
 
-        await mongoose.connect(mongoURI);
+            await mongoose.connect(mongoURI, {
+                maxPoolSize: process.env.VERCEL ? 5 : 10,
+                serverSelectionTimeoutMS: 5000,
+                socketTimeoutMS: 45000,
+            });
 
-        isConnected = true;
-        console.log('✅ MongoDB connected successfully');
-    } catch (error: any) {
-        console.error('❌ MongoDB connection error:', error.message || error);
-
-        // ❌ Never process.exit on Vercel
-        if (!process.env.VERCEL) {
-            process.exit(1);
+            isConnected = true;
+            console.log('✅ MongoDB connected successfully');
+        } catch (error: any) {
+            connectionPromise = null; // Allow retry on failure
+            console.error('❌ MongoDB connection error:', error.message || error);
+            if (!process.env.VERCEL) {
+                process.exit(1);
+            }
         }
-    }
+    })();
+
+    return connectionPromise;
 };
-
-// Optional but safe
-mongoose.connection.on('disconnected', () => {
-    isConnected = false;
-    console.log('⚠️ MongoDB disconnected');
-});
-
-mongoose.connection.on('error', (err) => {
-    console.error('❌ MongoDB error:', err);
-});
