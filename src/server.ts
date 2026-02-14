@@ -5,6 +5,9 @@ import swaggerUi from 'swagger-ui-express';
 import { connectDB } from './config/database.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { swaggerSpec } from './config/swagger.js';
+import rateLimit from 'express-rate-limit';
+import compression from 'compression';
+import { setupKeepAlive } from './utils/keepAlive.js';
 
 // Routes
 import authRoutes from './routes/auth.js';
@@ -16,6 +19,11 @@ import utilsRoutes from './routes/utils.js';
 if (!process.env.VERCEL) {
     dotenv.config();
 }
+//rate limit
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,20 +32,20 @@ const PORT = process.env.PORT || 3000;
 connectDB();
 
 // Middleware - Allow requests from same origin (for Swagger) and configured origins
-const allowedOrigins = process.env.CORS_ORIGIN 
-    ? process.env.CORS_ORIGIN.split(',') 
+const allowedOrigins = process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
     : ['http://localhost:5173', 'http://localhost:3000'];
 
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (like Swagger UI on same domain)
         if (!origin) return callback(null, true);
-        
+
         // Allow configured origins
         if (allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
-        
+
         // Allow same-origin requests (Railway/Vercel deployment with Swagger)
         callback(null, true);
     },
@@ -47,6 +55,20 @@ app.use(cors({
 app.options('*', cors()); // IMPORTANT preflight fix
 
 // Increase payload limits to allow file uploads sent as base64 (frontend enforces file size too)
+// Security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    next();
+});
+
+// ratelimite
+app.use('/api/', limiter);
+// compression
+app.use(compression());
+
 // Set slightly above frontend limit (10MB) to allow encoding overhead
 app.use(express.json({ limit: '12mb' }));
 app.use(express.urlencoded({ extended: true, limit: '12mb' }));
@@ -157,6 +179,7 @@ if (!process.env.VERCEL) {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
         console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
+        setupKeepAlive();
     });
 }
 

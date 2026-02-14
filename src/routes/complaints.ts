@@ -111,7 +111,9 @@ router.get(
                 .populate('assignedTo', 'name username')
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(limitNum);
+                .limit(limitNum)
+                .lean()
+                .exec();
 
             const total = await Complaint.countDocuments(query);
 

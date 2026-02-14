@@ -15,6 +15,15 @@ const generateToken = (userId: string, role?: 'student' | 'faculty' | 'admin'): 
     return jwt.sign({ userId, role }, secret, signOptions);
 };
 
+// Health check endpoint for keep-alive
+router.get('/health-check', (req: Request, res: Response) => {
+    res.status(200).json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
 /**
  * @swagger
  * tags:
