@@ -69,9 +69,9 @@ app.use('/api/', limiter);
 // compression
 app.use(compression());
 
-// Set slightly above frontend limit (10MB) to allow encoding overhead
-app.use(express.json({ limit: '12mb' }));
-app.use(express.urlencoded({ extended: true, limit: '12mb' }));
+// Set reasonable JSON payload limit (file uploads now go through Multer + Cloudinary)
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 
 /**

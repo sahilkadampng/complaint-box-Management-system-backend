@@ -1,8 +1,10 @@
-import express, { Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { body, validationResult, query } from 'express-validator';
 import Complaint, { IComplaint, ComplaintStatus } from '../models/Complaint.js';
 import { authenticate, authorize, AuthRequest } from '../middleware/auth.js';
 import { generateComplaintId } from '../idgenerater.js';
+import { uploadSingle } from '../middleware/upload.js';
+import { uploadToCloudinary } from '../services/uploadService.js';
 
 const router = express.Router();
 
@@ -271,6 +273,18 @@ router.post(
     '/',
     authenticate,
     authorize('student'),
+    // Multer parses multipart/form-data; text fields land in req.body, file in req.file
+    (req: Request, res: Response, next: NextFunction) => {
+        uploadSingle(req, res, (err: any) => {
+            if (err) {
+                const message = err.code === 'LIMIT_FILE_SIZE'
+                    ? 'File too large. Maximum size is 10 MB.'
+                    : err.message || 'File upload error';
+                return res.status(400).json({ error: message });
+            }
+            next();
+        });
+    },
     [
         body('title').trim().notEmpty().withMessage('Title is required').isLength({ max: 100 }),
         body('description')
@@ -287,8 +301,16 @@ router.post(
                 res.status(400).json({ errors: errors.array() });
                 return;
             }
-            const { title, description, category, attachment, department, yearOfStudy } = req.body;
+            const { title, description, category, department, yearOfStudy } = req.body;
             const user = req.user!;
+
+            // Upload attachment to Cloudinary if provided
+            let attachmentUrl = '';
+            if (req.file) {
+                const result = await uploadToCloudinary(req.file.buffer);
+                attachmentUrl = result.url;
+            }
+
             const complaint = new Complaint({
                 title,
                 description,
@@ -296,7 +318,7 @@ router.post(
                 studentId: user._id,
                 studentName: user.name,
                 studentUsername: user.username,
-                attachment: attachment || '',
+                attachment: attachmentUrl,
                 department: department || user.department || '',
                 yearOfStudy: yearOfStudy || user.yearOfStudy || '',
                 status: 'submitted',
@@ -459,6 +481,18 @@ router.post(
 router.put(
     '/:id',
     authenticate,
+    // Multer for optional file replacement
+    (req: Request, res: Response, next: NextFunction) => {
+        uploadSingle(req, res, (err: any) => {
+            if (err) {
+                const message = err.code === 'LIMIT_FILE_SIZE'
+                    ? 'File too large. Maximum size is 10 MB.'
+                    : err.message || 'File upload error';
+                return res.status(400).json({ error: message });
+            }
+            next();
+        });
+    },
     [
         body('title').optional().trim().isLength({ max: 100 }),
         body('description').optional().trim().isLength({ max: 1000 }),
@@ -489,11 +523,16 @@ router.put(
             }
 
             // Only allow updating certain fields
-            const { title, description, category, attachment } = req.body;
+            const { title, description, category } = req.body;
             if (title) complaint.title = title;
             if (description) complaint.description = description;
             if (category) complaint.category = category;
-            if (attachment !== undefined) complaint.attachment = attachment;
+
+            // Upload new attachment to Cloudinary if a file was provided
+            if (req.file) {
+                const result = await uploadToCloudinary(req.file.buffer);
+                complaint.attachment = result.url;
+            }
 
             await complaint.save();
 
