@@ -21,9 +21,9 @@ const createAdminUser = async () => {
         const adminData = {
             name: 'System Administrator',
             username: 'sahil',
-            email: 'pk9987758@gmail.com', // Change this to your email
+            email: 'sahilkadam9195@gmail.com', // Change this to your email
             password: 'Admin@12345', // Change this password
-            phoneNumber: '+92-300-0000001', // Add unique phone number
+            phoneNumber: '+91 93078 91604', // Add unique phone number
             role: 'admin' as const,
             createdBy: 'system',
         };

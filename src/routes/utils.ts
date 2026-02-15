@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import crypto from 'crypto';
+import Complaint from '../models/Complaint.js';
 
 const router = express.Router();
 
@@ -147,6 +148,69 @@ router.post('/hash-password', async (req: Request, res: Response): Promise<void>
         res.status(500).json({ 
             error: error.message || 'Failed to hash password' 
         });
+    }
+});
+
+/**
+ * @swagger
+ * /api/utils/public-stats:
+ *   get:
+ *     summary: Get public complaint statistics
+ *     description: Returns resolved complaint count and avg response time (no auth required)
+ *     tags: [Utils]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Stats retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 resolvedCount:
+ *                   type: number
+ *                 avgResponseTime:
+ *                   type: string
+ *       500:
+ *         description: Server error
+ */
+router.get('/public-stats', async (_req: Request, res: Response): Promise<void> => {
+    try {
+        // Count resolved complaints
+        const resolvedCount = await Complaint.countDocuments({ status: 'resolved' });
+
+        // Calculate avg response time from recent resolved complaints
+        const recentResolved = await Complaint.find({ status: 'resolved' })
+            .select('createdAt history')
+            .sort({ updatedAt: -1 })
+            .limit(100)
+            .lean();
+
+        let avgResponseTime = '--';
+        const durations: number[] = [];
+
+        for (const c of recentResolved) {
+            if (c.createdAt && c.history?.length) {
+                const resolvedEntry = [...c.history].reverse().find((h: any) => h.status === 'resolved');
+                if (resolvedEntry?.date) {
+                    const created = new Date(c.createdAt).getTime();
+                    const resolved = new Date(resolvedEntry.date).getTime();
+                    if (resolved > created) durations.push(resolved - created);
+                }
+            }
+        }
+
+        if (durations.length > 0) {
+            const avgMs = durations.reduce((a, b) => a + b, 0) / durations.length;
+            const avgHours = avgMs / (1000 * 60 * 60);
+            if (avgHours < 1) avgResponseTime = `${Math.round(avgHours * 60)}m`;
+            else if (avgHours < 48) avgResponseTime = `${Math.round(avgHours)}h`;
+            else avgResponseTime = `${Math.round(avgHours / 24)}d`;
+        }
+
+        res.json({ resolvedCount, avgResponseTime });
+    } catch (error: any) {
+        res.status(500).json({ error: error.message || 'Failed to fetch stats' });
     }
 });
 
